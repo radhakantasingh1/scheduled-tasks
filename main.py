@@ -6,33 +6,36 @@
 # See the solution video in the 100 Days of Python Course for explainations.
 
 
-from datetime import datetime
+import datetime
 import pandas
 import random
 import smtplib
 import os
 
 # import os and use it to get the Github repository secrets
-MY_EMAIL = os.environ.get("MY_EMAIL")
-MY_PASSWORD = os.environ.get("MY_PASSWORD")
+my_email = os.environ.get("MY_EMAIL")
+my_password = os.environ.get("MY_PASSWORD")
 
-today = datetime.now()
-today_tuple = (today.month, today.day)
+#reading birthday data
+birthday_data=pandas.read_csv("birthdays.csv")
 
-data = pandas.read_csv("birthdays.csv")
-birthdays_dict = {(data_row["month"], data_row["day"])                  : data_row for (index, data_row) in data.iterrows()}
-if today_tuple in birthdays_dict:
-    birthday_person = birthdays_dict[today_tuple]
-    file_path = f"letter_templates/letter_{random.randint(1, 3)}.txt"
-    with open(file_path) as letter_file:
-        contents = letter_file.read()
-        contents = contents.replace("[NAME]", birthday_person["name"])
+#today date
+now=datetime.datetime.now()
+today_month=now.month
+today_date=now.day
 
-    with smtplib.SMTP("YOUR EMAIL PROVIDER SMTP SERVER ADDRESS") as connection:
+today_birthdays=birthday_data[(birthday_data["month"]==today_month) & (birthday_data["day"]==today_date)]
+print(today_birthdays)
+for item in today_birthdays.iterrows():
+    # selecting a ramdom letter content
+    letter_no = random.randint(1, 3)
+    with open(f"letter_templates/letter_{letter_no}.txt", "r") as file:
+        mail = file.read()
+    mail=mail.replace("[NAME]",item[1]["name"])
+    with smtplib.SMTP("smtp.gmail.com") as connection:
         connection.starttls()
-        connection.login(MY_EMAIL, MY_PASSWORD)
+        connection.login(user=my_email, password=my_password)
         connection.sendmail(
-            from_addr=MY_EMAIL,
-            to_addrs=birthday_person["email"],
-            msg=f"Subject:Happy Birthday!\n\n{contents}"
-        )
+            from_addr=my_email,
+            to_addrs=item[1]["email"],
+            msg=f"Subject:Happy Birthday\n\n{mail}")
